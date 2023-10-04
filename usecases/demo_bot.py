@@ -1,7 +1,11 @@
 import time
 from typing import List
-
+from SPARQLWrapper import SPARQLWrapper, JSON
 from speakeasypy import Speakeasy, Chatroom
+import rdflib
+import networkx as nx
+import pandas as pd
+import plotly.express as px
 
 URL = "http://localhost"
 
@@ -18,6 +22,9 @@ class Agent:
                                    password=password)
         self.speakeasy.login()
 
+
+
+
     def listen(self):
         while True:
             # only check active chatrooms (i.e., remaining_time > 0) if active=True.
@@ -31,15 +38,12 @@ class Agent:
                 # If only_partner=True, it filters out messages sent by the current bot.
                 # If only_new=True, it filters out messages that have already been marked as processed.
                 for message in room.get_messages(only_partner=True, only_new=True):
-                    print(
-                        f"\t- Chatroom {room.room_id} "
-                        f"- new message #{message.ordinal}: '{message.message}' "
-                        f"- {self.get_time()}")
 
+                    answer=self.execute_query(message.message)
                     # Implement your agent here #
 
                     # Send a message to the corresponding chat room using the post_messages method of the room object.
-                    room.post_messages(f"Received your message: '{message.message}' ")
+                    room.post_messages(f"{answer}")
                     # Mark the message as processed, so it will be filtered out when retrieving new messages.
                     room.mark_as_processed(message)
 
@@ -61,7 +65,15 @@ class Agent:
     @staticmethod
     def get_time():
         return time.strftime("%H:%M:%S, %d-%m-%Y", time.localtime())
+    def execute_query(self, query):
+        endpoint_url = "https://query.wikidata.org/sparql"
 
+        sparql = SPARQLWrapper(endpoint_url)
+        sparql.setQuery(query)
+        sparql.setReturnFormat(JSON)
+        result = sparql.query().convert()
+
+        return result["results"]["bindings"]
 
 if __name__ == '__main__':
     demo_bot = Agent("bake-pizzicato-liquor_bot", "taEjieXE6oprgw")
