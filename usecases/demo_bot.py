@@ -1,29 +1,26 @@
 import time
 from typing import List
-from SPARQLWrapper import SPARQLWrapper, JSON
-from speakeasypy import Speakeasy, Chatroom
-import rdflib
-import networkx as nx
-import pandas as pd
-import plotly.express as px
 
-URL = "http://localhost"
+import rdflib
+import pickle
+
+from pyparsing import ParseException
+
+from speakeasypy import Speakeasy, Chatroom
 
 DEFAULT_HOST_URL = 'https://speakeasy.ifi.uzh.ch'
 listen_freq = 2
 
 
 class Agent:
-    def __init__(self, username, password):
+    def _init_(self, username, password,graph):
         self.username = username
         # Initialize the Speakeasy Python framework and login.
         self.speakeasy = Speakeasy(host=DEFAULT_HOST_URL,
                                    username=username,
                                    password=password)
         self.speakeasy.login()
-
-
-
+        self.graph = graph
 
     def listen(self):
         while True:
@@ -38,8 +35,7 @@ class Agent:
                 # If only_partner=True, it filters out messages sent by the current bot.
                 # If only_new=True, it filters out messages that have already been marked as processed.
                 for message in room.get_messages(only_partner=True, only_new=True):
-
-                    answer=self.execute_query(message.message)
+                    answer = self.getAnswer(self.graph, message.message)
                     # Implement your agent here #
 
                     # Send a message to the corresponding chat room using the post_messages method of the room object.
@@ -65,16 +61,50 @@ class Agent:
     @staticmethod
     def get_time():
         return time.strftime("%H:%M:%S, %d-%m-%Y", time.localtime())
-    def execute_query(self, query):
-        endpoint_url = "https://query.wikidata.org/sparql"
 
-        sparql = SPARQLWrapper(endpoint_url)
-        sparql.setQuery(query)
-        sparql.setReturnFormat(JSON)
-        result = sparql.query().convert()
+    def getAnswer(self, graph, query):
+        try:
+            answer=""
+            for result in graph.query(query):
+                if(len(result)>0):
+                    answer=answer+result[0]
+            if(len(answer)<=0):
+                answer="No Result Found"
+            return answer
+        except(ParseException):
+            return "No result"
 
-        return result["results"]["bindings"]
+def load_or_parse_graph(graph_path='./14_graph.nt', cache_path='cached_graph.pkl'):
+    """
+    Lädt einen gecachten Graphen oder parst ihn neu und speichert ihn im Cache.
+
+    Args:
+    - graph_path (str): Pfad zur Graphen-Datei.
+    - cache_path (str): Pfad zur Cache-Datei.
+
+    Returns:
+    - rdflib.Graph: Der geladene oder geparste Graph.
+    """
+    try:
+        # Versuche, den gecachten Graphen zu laden
+        with open(cache_path, 'rb') as f:
+            graph = pickle.load(f)
+    except (FileNotFoundError, pickle.UnpicklingError):
+        # Wenn das Laden fehlschlägt, parst den Graphen neu
+        graph = rdflib.Graph()
+        graph.parse(graph_path, format='turtle')
+
+        # Speichere den neu geparsten Graphen im Cache
+        with open(cache_path, 'wb') as f:
+            pickle.dump(graph, f)
+
+    return graph
+
+# Verwendung der Methode:
+
+
 
 if __name__ == '__main__':
-    demo_bot = Agent("bake-pizzicato-liquor_bot", "taEjieXE6oprgw")
+    graph = load_or_parse_graph()
+    demo_bot = Agent("bake-pizzicato-liquor_bot", "taEjieXE6oprgw", graph)
     demo_bot.listen()
