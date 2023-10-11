@@ -13,7 +13,7 @@ listen_freq = 2
 
 
 class Agent:
-    def _init_(self, username, password,graph):
+    def __init__(self, username, password, graph):
         self.username = username
         # Initialize the Speakeasy Python framework and login.
         self.speakeasy = Speakeasy(host=DEFAULT_HOST_URL,
@@ -64,15 +64,16 @@ class Agent:
 
     def getAnswer(self, graph, query):
         try:
-            answer=""
+            answer = ""
             for result in graph.query(query):
-                if(len(result)>0):
-                    answer=answer+result[0]
-            if(len(answer)<=0):
-                answer="No Result Found"
+                if (len(result) > 0):
+                    answer = answer + result[0]
+            if (len(answer) <= 0):
+                answer = "No Result Found"
             return answer
         except(ParseException):
             return "No result"
+
 
 def load_or_parse_graph(graph_path='./14_graph.nt', cache_path='cached_graph.pkl'):
     """
@@ -100,8 +101,8 @@ def load_or_parse_graph(graph_path='./14_graph.nt', cache_path='cached_graph.pkl
 
     return graph
 
-# Verwendung der Methode:
 
+# Verwendung der Methode:
 
 
 if __name__ == '__main__':
