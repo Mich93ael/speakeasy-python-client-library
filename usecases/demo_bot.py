@@ -95,7 +95,9 @@ class Agent:
         if person_label and movie_label:
 
             person_label = person_label.replace("'", "")
+            person_label = person_label.replace("\"", "")
             movie_label = movie_label.replace("'", "")
+            movie_label = movie_label.replace("\"", "")
             # SPARQL-Abfrage um zu überprüfen, ob die Person das Kunstwerk (Film) direktiert hat
             q = f"""
             PREFIX ddis: <http://ddis.ch/atai/>
@@ -128,6 +130,7 @@ class Agent:
 
         if movie_label:
             movie_label = movie_label.replace("'", "")
+            movie_label = movie_label.replace("\"", "")
             # SPARQL-Abfrage um zu überprüfen, ob die Person das Kunstwerk (Film) direktiert hat
             if "direc" in doc.text:
                 q = f"""
@@ -147,6 +150,8 @@ class Agent:
                 if (len(result) > 0):
                     textback = ""
                     for res in result:
+                        if len(textback) > 0:
+                            textback = textback + ", "
                         textback = textback + res[0]
                     return "The director is " + textback
                 else:
@@ -169,6 +174,8 @@ class Agent:
                 if (len(result) > 0):
                     textback = ""
                     for res in result:
+                        if len(textback) > 0:
+                            textback = textback + ", "
                         textback = textback + res[0]
                     return "The screenwriter is " + textback
                 else:
